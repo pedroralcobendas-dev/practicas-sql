@@ -25,24 +25,25 @@ BEGIN
 END;
 GO
 
--- Actualizamos datos de ejemplo para tener diversidad en canales, regiones y segmentos
-UPDATE clientes SET segmento = 'Corporativo', region = 'Centro' WHERE id_cliente = 10;
-UPDATE clientes SET segmento = 'Pyme', region = 'Centro' WHERE id_cliente = 20;
-UPDATE clientes SET segmento = 'Consumidor Final', region = 'CABA/GBA' WHERE id_cliente = 30;
-UPDATE clientes SET segmento = 'Pyme', region = 'Cuyo' WHERE id_cliente = 40;
+-- Actualizamos datos de ejemplo para clientes existentes (IDs 1, 2, 3, 4, 5)
+UPDATE clientes SET segmento = 'Corporativo', region = 'Centro' WHERE id_cliente = 1;
+UPDATE clientes SET segmento = 'Pyme', region = 'Centro' WHERE id_cliente = 2;
+UPDATE clientes SET segmento = 'Consumidor Final', region = 'CABA/GBA' WHERE id_cliente = 3;
+UPDATE clientes SET segmento = 'Pyme', region = 'Cuyo' WHERE id_cliente = 4;
+UPDATE clientes SET segmento = 'Consumidor Final', region = 'NOA' WHERE id_cliente = 5;
 
 -- Insertamos un cliente adicional sin ventas para testear la Consulta 2
-IF NOT EXISTS (SELECT 1 FROM clientes WHERE id_cliente = 50)
+IF NOT EXISTS (SELECT 1 FROM clientes WHERE id_cliente = 99)
 BEGIN
     INSERT INTO clientes (id_cliente, nombre, email, ciudad, fecha_registro, segmento, region)
-    VALUES (50, 'Esteban Quito', 'esteban@mail.com', 'Salta', '2024-03-01', 'Consumidor Final', 'NOA');
+    VALUES (99, 'Esteban Quito', 'cliente.sinventa@mail.com', 'Salta', '2024-03-01', 'Consumidor Final', 'NOA');
 END;
 
--- Insertamos un producto adicional sin ventas para testear la Consulta 3
+-- Insertamos un producto adicional sin ventas para testear la Consulta 3 (usando id_categoria = 2)
 IF NOT EXISTS (SELECT 1 FROM productos WHERE id_producto = 7)
 BEGIN
     INSERT INTO productos (id_producto, nombre_producto, id_categoria, precio, stock, activo)
-    VALUES (7, 'Webcam HD 1080p', 102, 45.00, 15, 1);
+    VALUES (7, 'Webcam HD 1080p', 2, 45.00, 15, 1);
 END;
 
 -- Asignamos canales variados a las ventas
@@ -91,6 +92,10 @@ LEFT JOIN ventas v ON c.id_cliente = v.id_cliente
 WHERE v.id_venta IS NULL;
 GO
 
+-- Borramos el registro duplicado (me figuraban dos esteban quito con distinto mail y misma fecha de registro)
+DELETE FROM clientes WHERE email = 'cliente.sinventa@mail.com';
+GO
+
 
 -- ----------------------------------------------------------------------------
 -- CONSULTA 3: Productos sin ventas (LEFT JOIN)
@@ -112,7 +117,6 @@ GO
 -- Combina flujos de ventas Online y Presencial y calcula el acumulado por canal.
 -- ----------------------------------------------------------------------------
 WITH VentasConsolidadas AS (
-    -- Subconsulta de ventas canal Online
     SELECT 
         id_venta,
         fecha_venta,
@@ -125,7 +129,6 @@ WITH VentasConsolidadas AS (
 
     UNION ALL
 
-    -- Subconsulta de ventas canal Presencial
     SELECT 
         id_venta,
         fecha_venta,
